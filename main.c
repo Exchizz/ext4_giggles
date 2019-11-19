@@ -8,6 +8,107 @@
 #include<stdlib.h>
 
 
+#define	EXT4_NDIR_BLOCKS		12
+#define	EXT4_IND_BLOCK			EXT4_NDIR_BLOCKS
+#define	EXT4_DIND_BLOCK			(EXT4_IND_BLOCK + 1)
+#define	EXT4_TIND_BLOCK			(EXT4_DIND_BLOCK + 1)
+#define	EXT4_N_BLOCKS			(EXT4_TIND_BLOCK + 1)
+
+
+/*
+ * Structure of an inode on the disk
+ */
+struct ext4_inode {
+        __le16  i_mode;         /* File mode */
+        __le16  i_uid;          /* Low 16 bits of Owner Uid */
+        __le32  i_size_lo;      /* Size in bytes */
+        __le32  i_atime;        /* Access time */
+        __le32  i_ctime;        /* Inode Change time */
+        __le32  i_mtime;        /* Modification time */
+        __le32  i_dtime;        /* Deletion Time */
+        __le16  i_gid;          /* Low 16 bits of Group Id */
+        __le16  i_links_count;  /* Links count */
+        __le32  i_blocks_lo;    /* Blocks count */
+        __le32  i_flags;        /* File flags */
+        union {
+                struct {
+                        __le32  l_i_version;
+                } linux1;
+                struct {
+                        __u32  h_i_translator;
+                } hurd1;
+                struct {
+                        __u32  m_i_reserved1;
+                } masix1;
+        } osd1;                         /* OS dependent 1 */
+        __le32  i_block[EXT4_N_BLOCKS];/* Pointers to blocks */
+        __le32  i_generation;   /* File version (for NFS) */
+        __le32  i_file_acl_lo;  /* File ACL */
+        __le32  i_size_high;
+        __le32  i_obso_faddr;   /* Obsoleted fragment address */
+        union {
+                struct {
+                        __le16  l_i_blocks_high; /* were l_i_reserved1 */
+                        __le16  l_i_file_acl_high;
+                        __le16  l_i_uid_high;   /* these 2 fields */
+                        __le16  l_i_gid_high;   /* were reserved2[0] */
+                        __le16  l_i_checksum_lo;/* crc32c(uuid+inum+inode) LE */
+                        __le16  l_i_reserved;
+                } linux2;
+                struct {
+                        __le16  h_i_reserved1;  /* Obsoleted fragment number/size which are removed in ext4 */
+                        __u16   h_i_mode_high;
+                        __u16   h_i_uid_high;
+                        __u16   h_i_gid_high;
+                        __u32   h_i_author;
+                } hurd2;
+                struct {
+                        __le16  h_i_reserved1;  /* Obsoleted fragment number/size which are removed in ext4 */
+                        __le16  m_i_file_acl_high;
+                        __u32   m_i_reserved2[2];
+                } masix2;
+        } osd2;                         /* OS dependent 2 */
+        __le16  i_extra_isize;
+        __le16  i_checksum_hi;  /* crc32c(uuid+inum+inode) BE */
+        __le32  i_ctime_extra;  /* extra Change time      (nsec << 2 | epoch) */
+        __le32  i_mtime_extra;  /* extra Modification time(nsec << 2 | epoch) */
+        __le32  i_atime_extra;  /* extra Access time      (nsec << 2 | epoch) */
+        __le32  i_crtime;       /* File Creation time */
+        __le32  i_crtime_extra; /* extra FileCreationtime (nsec << 2 | epoch) */
+        __le32  i_version_hi;   /* high 32 bits for 64-bit version */
+        __le32  i_projid;       /* Project ID */
+};
+
+
+struct ext4_group_desc
+{
+	__le32	bg_block_bitmap_lo;	/* Blocks bitmap block */
+	__le32	bg_inode_bitmap_lo;	/* Inodes bitmap block */
+	__le32	bg_inode_table_lo;	/* Inodes table block */
+	__le16	bg_free_blocks_count_lo;/* Free blocks count */
+	__le16	bg_free_inodes_count_lo;/* Free inodes count */
+	__le16	bg_used_dirs_count_lo;	/* Directories count */
+	__le16	bg_flags;		/* EXT4_BG_flags (INODE_UNINIT, etc) */
+	__le32  bg_exclude_bitmap_lo;   /* Exclude bitmap for snapshots */
+	__le16  bg_block_bitmap_csum_lo;/* crc32c(s_uuid+grp_num+bbitmap) LE */
+	__le16  bg_inode_bitmap_csum_lo;/* crc32c(s_uuid+grp_num+ibitmap) LE */
+	__le16  bg_itable_unused_lo;	/* Unused inodes count */
+	__le16  bg_checksum;		/* crc16(sb_uuid+group+desc) */
+	__le32	bg_block_bitmap_hi;	/* Blocks bitmap block MSB */
+	__le32	bg_inode_bitmap_hi;	/* Inodes bitmap block MSB */
+	__le32	bg_inode_table_hi;	/* Inodes table block MSB */
+	__le16	bg_free_blocks_count_hi;/* Free blocks count MSB */
+	__le16	bg_free_inodes_count_hi;/* Free inodes count MSB */
+	__le16	bg_used_dirs_count_hi;	/* Directories count MSB */
+	__le16  bg_itable_unused_hi;    /* Unused inodes count MSB */
+	__le32  bg_exclude_bitmap_hi;   /* Exclude bitmap block MSB */
+	__le16  bg_block_bitmap_csum_hi;/* crc32c(s_uuid+grp_num+bbitmap) BE */
+	__le16  bg_inode_bitmap_csum_hi;/* crc32c(s_uuid+grp_num+ibitmap) BE */
+	__u32   bg_reserved;
+};
+
+
+
 struct ext4_super_block {
 /*00*/	__le32	s_inodes_count;		/* Inodes count */
 	__le32	s_blocks_count_lo;	/* Blocks count */
@@ -139,6 +240,7 @@ int main(){
 
 	}
 
+	// Skip first 1024 as used for boot
 	lseek(fd, 1024, SEEK_SET);
 	struct ext4_super_block * super_block = malloc(sizeof(struct ext4_super_block));
 
@@ -149,5 +251,74 @@ int main(){
 	printf("inode count: %d\n", super_block->s_inodes_count);
 	printf("inode count: %d\n", super_block->s_blocks_count_lo);
 
+	printf("Last mounted: %s\n", super_block->s_last_mounted);
+	printf("inode size: %d\n", super_block->s_inode_size);
+
+	// seek to next block 
+	lseek(fd, 2048, SEEK_CUR);
+
+	struct ext4_group_desc * group_desc = malloc(sizeof(struct ext4_group_desc));
+	read_len = read(fd, group_desc, sizeof(struct ext4_group_desc));	
+
+
+	printf("Group(0) Group descriptor size: %d\n", read_len);
+	printf("Group(0) First group descripter (free inodes table low): %d\n", group_desc->bg_free_inodes_count_lo);
+	printf("Group(0) First group descripter (free inodes table high): %d\n", group_desc->bg_free_inodes_count_hi);
+	printf("Group(0) First group descripter (Inode bitmap block): %d\n", group_desc->bg_inode_bitmap_lo);
+
+	printf("Group(0) Inode bitmap low: %d\n", group_desc->bg_inode_bitmap_lo);
+	printf("Group(0) Inode bitmap high: %d\n", group_desc->bg_inode_bitmap_hi);
+	printf("Group(0) Inode table lo: %d\n", group_desc->bg_inode_table_lo);
+
+
+
+	//read_len = read(fd, group_desc, sizeof(struct ext4_group_desc));	
+
+
+	//printf("Group(1) Group descriptor size: %d\n", read_len);
+	//printf("Group(1) First group descripter (free inodes table low): %d\n", group_desc->bg_free_inodes_count_lo);
+	//printf("Group(1) First group descripter (free inodes table high): %d\n", group_desc->bg_free_inodes_count_hi);
+	//printf("Group(1) First group descripter (Inode bitmap block): %d\n", group_desc->bg_inode_bitmap_lo);
+
+	//printf("Group(1) Inode bitmap low: %d\n", group_desc->bg_inode_bitmap_lo);
+	//printf("Group(1) Inode bitmap high: %d\n", group_desc->bg_inode_bitmap_hi);
+	//printf("Group(1) Inode table lo: %d\n", group_desc->bg_inode_table_lo);
+
+
+
+	lseek(fd, (group_desc->bg_inode_bitmap_lo)*4096, SEEK_SET);
+	printf("Position: %lu\n", lseek(fd, 0, SEEK_CUR));
+
+	// 8 bits pr. byte, each bit represents an inode in block group
+	char * inode_bitmap = malloc(super_block->s_inodes_per_group/8);
+
+	read_len = read(fd, inode_bitmap, super_block->s_inodes_per_group/8);
+	printf("Read %lu bytes from inode bitmap\n", read_len);
+
+
+#define CHECK_BIT(var,pos) ((var) & (1<<(pos)))
+
+	for (int i = 0; i < super_block->s_inodes_per_group ; i++){
+		if(CHECK_BIT(inode_bitmap[i/8], i % 8)){
+			printf("Inode %d exists\n", i);
+		}
+	}
+	
+
+
+//	// seek to inode table in block group 0
+//	lseek(fd, (group_desc->bg_inode_table_lo)*4096, SEEK_CUR);
+//
+//	// Seek second inode
+//	lseek(fd, 11*(super_block->s_inode_size), SEEK_SET);
+//
+//	struct ext4_inode * data = malloc(sizeof(struct ext4_inode));
+//
+//	read_len = read(fd, data, sizeof(struct ext4_inode));
+//
+//	printf("Bytes read from inode table: %d\n", read_len);
+//	printf("hardlinks: %d\n", data->i_links_count);
+
 	return 0;
+
 }
