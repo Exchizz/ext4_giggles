@@ -52,4 +52,4 @@ In my case, it's 33792 bytes into the file
 dd if=fs_ext4.img bs=4096 skip=33792 count=1 status=none | xxd -s 0 -l 12 -b
 ```
 
-dd will then print th eoutput of the file.
+dd will then print the output of the file and converted into ascii by xxd
