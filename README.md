@@ -45,7 +45,7 @@ In my case the inode is 12 (left most column)
 ```
 
 ### 4. Read file form filesystem using dd
-Look for line starting with "index: 5, data: " - it will show the byte cound to where the data of the file is located.
+Look for line starting with "index: 5, data: " - it will show the byte count to where the data of the file is located.
 In my case, it's 33792 bytes into the file
 
 ```
