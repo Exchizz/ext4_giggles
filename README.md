@@ -23,7 +23,7 @@ sudo mount fs_ext4.img mp
 Where mp is a directory.
 
 
-By creating, deleting etc. files in the mp/ filesystem, you can see the changes made tot he filesystem using the code in main.c
+By creating, deleting etc. files in the mp/ filesystem, you can see the changes made to the filesystem using the code in main.c
 
 # Example:
 ### 1. Create file with content "Hello world" in newly created filesystem
