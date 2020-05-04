@@ -1,3 +1,4 @@
+#include <string.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <linux/types.h>
@@ -6,6 +7,9 @@
 #include <unistd.h>
 #include <unistd.h>
 #include<stdlib.h>
+
+
+#define CHECK_BIT(var,pos) ((var) & (1<<(pos)))
 
 
 #define	EXT4_NDIR_BLOCKS		12
@@ -293,10 +297,8 @@ int main(){
 	char * inode_bitmap = malloc(super_block->s_inodes_per_group/8);
 
 	read_len = read(fd, inode_bitmap, super_block->s_inodes_per_group/8);
-	printf("Read %lu bytes from inode bitmap\n", read_len);
+	printf("Read %d bytes from inode bitmap\n", read_len);
 
-
-#define CHECK_BIT(var,pos) ((var) & (1<<(pos)))
 
 	for (int i = 0; i < super_block->s_inodes_per_group ; i++){
 		if(CHECK_BIT(inode_bitmap[i/8], i % 8)){
@@ -304,20 +306,28 @@ int main(){
 		}
 	}
 	
+	// seek to inode table in block group 0
+	lseek(fd, (group_desc->bg_inode_table_lo)*4096, SEEK_SET);
 
+	// Seek second inode
+	lseek(fd, 11*(super_block->s_inode_size), SEEK_CUR);
+	
+	struct ext4_inode * data = malloc(sizeof(struct ext4_inode));
+	
+	read_len = read(fd, data, sizeof(struct ext4_inode));
+	
+	printf("Bytes read from inode table: %d\n", read_len);
+	printf("hardlinks: %d\n", data->i_links_count);
 
-//	// seek to inode table in block group 0
-//	lseek(fd, (group_desc->bg_inode_table_lo)*4096, SEEK_CUR);
-//
-//	// Seek second inode
-//	lseek(fd, 11*(super_block->s_inode_size), SEEK_SET);
-//
-//	struct ext4_inode * data = malloc(sizeof(struct ext4_inode));
-//
-//	read_len = read(fd, data, sizeof(struct ext4_inode));
-//
-//	printf("Bytes read from inode table: %d\n", read_len);
-//	printf("hardlinks: %d\n", data->i_links_count);
+	printf("Inode 12 takes: %d blocks\n", (data->i_blocks_lo));
+
+	printf("File size: %d\n", data->i_size_lo);
+	printf("File flags %d\n", data->i_flags);
+
+	for(int i = 0; i < 15; i++){
+		int tmp = data->i_block[i];
+		printf("index: %d, data: %d\n", i, tmp);
+	}
 
 	return 0;
 
